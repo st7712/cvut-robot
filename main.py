@@ -50,7 +50,6 @@ while Button.CENTER not in ev3.buttons.pressed():
 
 _thread.start_new_thread(pickupThread, ())
 
-# ahoj
 while robot.distance() < 1000:
     followBlack()
     wait(5)
