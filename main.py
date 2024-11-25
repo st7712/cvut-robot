@@ -36,21 +36,20 @@ def pickupThread():
 robot.reset()
 
 white_intensity = 75
-gray_intensity = 65
+gray_intensity = 55
 
 def followBlack():
     intensity = color_sensor.reflection()
     if intensity > white_intensity:
-        robot.drive(100, -15)
+        robot.drive(100, -8)
     else:
-        robot.drive(100, (gray_intensity - intensity) * 1.5)
+        robot.drive(100, (gray_intensity - intensity) * 0.5)
 
 while Button.CENTER not in ev3.buttons.pressed():
     wait(10)
 
 _thread.start_new_thread(pickupThread, ())
 
-#test2
 while robot.distance() < 1000:
     followBlack()
     wait(5)
