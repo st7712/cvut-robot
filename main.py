@@ -36,25 +36,14 @@ def pickupThread():
 robot.reset()
 
 white_intensity = 90
-gray_intensity = 75
+gray_intensity = 55
 
 def followBlack():
     r, g, b = color_sensor.rgb()
-
-    # Calculate an intensity value from the RGB components
-    intensity = (r + g + b) / 3  # Average of R, G, and B
-
-    # Define thresholds based on your environment
-    white_intensity = 90  # Adjust based on readings on white surface
-    black_intensity = 5  # Adjust based on readings on black line
-
-    if intensity > white_intensity:
-        # On white surface, steer left
+    if b > white_intensity:
         robot.drive(-100, -15)
     else:
-        # On black line, adjust steering based on intensity
-        error = white_intensity - intensity
-        robot.drive(-100, error * 1.3)
+        robot.drive(-100, (gray_intensity - b) * 1.5)
 
 while Button.CENTER not in ev3.buttons.pressed():
     wait(10)
