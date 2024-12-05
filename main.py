@@ -39,11 +39,11 @@ white_intensity = 90
 gray_intensity = 55
 
 def followBlack():
-    r, g, b = color_sensor.rgb()
-    if b > white_intensity:
+    intensity = color_sensor.reflection()
+    if intensity > white_intensity:
         robot.drive(-100, -15)
     else:
-        robot.drive(-100, (gray_intensity - b) * 1.5)
+        robot.drive(-100, (gray_intensity - intensity) * 1.5)
 
 while Button.CENTER not in ev3.buttons.pressed():
     wait(10)
