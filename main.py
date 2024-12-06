@@ -36,26 +36,48 @@ def pickupThread():
 robot.reset()
 
 white_intensity = 90
-gray_intensity = 8
-
-
-pValue = 0.5
+gray_intensity = 55
 
 def followBlack():
     intensity = color_sensor.reflection()
-    errorLeft = (white_intensity - intensity)*pValue
-    errorRight = (intensity - gray_intensity)*pValue
-    robot.drive(errorRight, errorLeft)
+    if intensity > white_intensity:
+        robot.drive(-100, -15)
+    else:
+        robot.drive(-100, (gray_intensity - intensity) * 1.5)
+
+def checkIfBlackCross(ultra_distance, driven_distance, color_intensity):
+    ultra, driven, color = 0
+    if ultra_distance > 550:
+        ultra = 1
+    if driven_distance < -850:
+        driven = 1
+    if color_intensity < 15:
+        color = 1
+    if ultra + driven + color >= 2:
+        return True
+    return False
 
 while Button.CENTER not in ev3.buttons.pressed():
     wait(10)
     
 _thread.start_new_thread(pickupThread, ())
 
-while robot.distance() < 1000:
+while not touch_sensor1.pressed():
+    robot.drive(-100, 0)
+    wait(5)
+robot.stop()
+robot.drive(100, 0)
+wait(500)
+robot.turn(70)
+robot.reset()
+while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection()):
+    print("Driven: ", robot.distance())
+    print("Distance: ", ultrasonic_sensor.distance())
     followBlack()
     wait(5)
-while not touch_sensor1.pressed():
+robot.stop()
+ev3.speaker.beep()
+"""while not touch_sensor1.pressed():
     followBlack()
     wait(5)
 robot.stop()
@@ -92,4 +114,4 @@ robot.drive(100, 0)
 wait(300)
 robot.drive(-100, 0)
 wait(300)
-robot.stop()
+robot.stop()"""

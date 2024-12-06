@@ -38,7 +38,7 @@ robot.reset()
 white_intensity = 75
 gray_intensity = 55
 
-while
+# while
 """
 def followBlack():
     intensity = color_sensor.reflection()
