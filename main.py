@@ -38,12 +38,12 @@ robot.reset()
 white_intensity = 90
 gray_intensity = 55
 
-def followBlack():
+def followBlack(whiteAngle = -15):
     intensity = color_sensor.reflection()
     if intensity > white_intensity:
-        robot.drive(-100, -15)
+        robot.drive(-100, whiteAngle)
     else:
-        robot.drive(-100, (gray_intensity - intensity) * 0.6)
+        robot.drive(-100, (gray_intensity - intensity) * 0.4)
 
 def checkIfBlackCross(ultra_distance, driven_distance, color_intensity, max_ultra, max_driven, max_color):
     ultra = 0
@@ -68,7 +68,7 @@ _thread.start_new_thread(pickupThread, ())
 # 1. otočka
 while not touch_sensor1.pressed():
     robot.drive(-100, 0)
-    wait(5)
+    # wait(5)
 robot.stop()
 robot.drive(100, 0)
 wait(150)
@@ -81,7 +81,7 @@ while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_se
     print("Driven: ", robot.distance())
     print("Distance: ", ultrasonic_sensor.distance())
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 ev3.speaker.beep(500, 500)
 # otočka směrem k 1. spojce
@@ -91,37 +91,37 @@ robot.reset()
 while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 610, -230, 15):
     print("Driven: ", robot.distance())
     print("Distance: ", ultrasonic_sensor.distance())
-    robot.drive(-100, 0)
-    wait(5)
+    followBlack(-30)
+    # wait(5)
 robot.stop()
 ev3.speaker.beep()
 # otočka směrem k 2. čáře
-robot.turn(90)
+robot.turn(80)
 robot.reset()
 # vedení po 2. čáře až do stěny
 while not touch_sensor1.pressed():
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 # zacouvání od stěny a otočka směrem k 3. čáře
 robot.drive(100,0)
 wait(50)
-robot.turn(-90)
+robot.turn(-80)
 # približování k 3. čáře
-while ultrasonic_sensor.distance() < 580:
+while ultrasonic_sensor.distance() < 590:
     print("Distance: ", ultrasonic_sensor.distance())
     robot.drive(-100, 0)
-    wait(5)
+    # wait(5)
 robot.stop()
 # otočka směrem na 3. čáru
-robot.turn(-90)
+robot.turn(-85)
 robot.reset()
 # vedení po 3. čáře
 while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 860, -810, 15):
     print("Driven: ", robot.distance())
     print("Distance: ", ultrasonic_sensor.distance())
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 ev3.speaker.beep()
 # otočka směrem ke 2. spojce
@@ -132,7 +132,7 @@ while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_se
     print("Driven: ", robot.distance())
     print("Distance: ", ultrasonic_sensor.distance())
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 ev3.speaker.beep()
 # otočka směrem ke 4. čáře
@@ -141,29 +141,29 @@ robot.reset()
 # vedení po 4. čáře až do stěny
 while not touch_sensor1.pressed():
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 # manévr k 1. zásobníku
 robot.drive(100,0)
 wait(500)
 robot.turn(-120)
-robot.drive(100,3)
+robot.drive(100,-3)
 wait(7000)
 """while not touch_sensor1.pressed():
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 robot.drive(100,0)
 wait(500)
 robot.turn(-70)
 while ultrasonic_sensor.distance() < 495:
     robot.drive(-100, 0)
-    wait(5)
+    # wait(5)
 robot.stop()
 robot.turn(-70)
 while not touch_sensor1.pressed():
     followBlack()
-    wait(5)
+    # wait(5)
 robot.stop()
 robot.drive(100, 0)
 wait(500)
