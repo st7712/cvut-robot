@@ -43,19 +43,21 @@ def followBlack():
     if intensity > white_intensity:
         robot.drive(-100, -15)
     else:
-        robot.drive(-100, (gray_intensity - intensity) * 1.5)
+        robot.drive(-100, (gray_intensity - intensity) * 1.2)
 
-def checkIfBlackCross(ultra_distance, driven_distance, color_intensity):
-    ultra, driven, color = 0
-    if ultra_distance > 550:
+def checkIfBlackCross(ultra_distance, driven_distance, color_intensity, max_ultra, max_driven, max_color):
+    ultra = 0
+    driven = 0 
+    color = 0
+    if ultra_distance > max_ultra:
         ultra = 1
-    if driven_distance < -850:
+    if driven_distance < max_driven:
         driven = 1
-    if color_intensity < 15:
+    if color_intensity < max_color:
         color = 1
     if ultra + driven + color >= 2:
-        return True
-    return False
+        return False
+    return True
 
 while Button.CENTER not in ev3.buttons.pressed():
     wait(10)
@@ -67,16 +69,62 @@ while not touch_sensor1.pressed():
     wait(5)
 robot.stop()
 robot.drive(100, 0)
-wait(500)
+wait(300)
 robot.turn(70)
 robot.reset()
-while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection()):
+while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 850, -800, 15):
+    print("Driven: ", robot.distance())
+    print("Distance: ", ultrasonic_sensor.distance())
+    followBlack()
+    wait(5)
+robot.stop()
+ev3.speaker.beep(500, 5000)
+robot.turn(70)
+robot.reset()
+while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 600, -220, 15):
     print("Driven: ", robot.distance())
     print("Distance: ", ultrasonic_sensor.distance())
     followBlack()
     wait(5)
 robot.stop()
 ev3.speaker.beep()
+robot.turn(70)
+robot.reset()
+while not touch_sensor1.pressed():
+    followBlack()
+    wait(5)
+robot.stop()
+robot.drive(100,0)
+wait(500)
+robot.turn(-70)
+while ultrasonic_sensor.distance() < 550:
+    robot.drive(-100, 0)
+    wait(5)
+robot.stop()
+robot.turn(-70)
+robot.reset()
+while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 850, -800, 15):
+    print("Driven: ", robot.distance())
+    print("Distance: ", ultrasonic_sensor.distance())
+    followBlack()
+    wait(5)
+robot.stop()
+ev3.speaker.beep()
+robot.turn(70)
+robot.reset()
+while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 600, -220, 15):
+    print("Driven: ", robot.distance())
+    print("Distance: ", ultrasonic_sensor.distance())
+    followBlack()
+    wait(5)
+robot.stop()
+ev3.speaker.beep()
+robot.turn(70)
+robot.reset()
+while not touch_sensor1.pressed():
+    followBlack()
+    wait(5)
+robot.stop()
 """while not touch_sensor1.pressed():
     followBlack()
     wait(5)
