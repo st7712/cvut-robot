@@ -1,4 +1,6 @@
 #!/usr/bin/env pybricks-micropython
+
+# Import the necessary libraries
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import (
     Motor,
@@ -6,25 +8,57 @@ from pybricks.ev3devices import (
     ColorSensor,
     UltrasonicSensor
 )
-from pybricks.parameters import Port, Button
+from pybricks.parameters import Port, Button, Stop, Direction
 from pybricks.tools import wait
 from pybricks.robotics import DriveBase
 import _thread
 
-left_motor = Motor(Port.D)
-right_motor = Motor(Port.A)
-pickup_motor = Motor(Port.C)
+# Initialize devices
 ev3 = EV3Brick()
+left_motor = Motor(Port.A, positive_direction=Direction.COUNTERCLOCKWISE)
+right_motor = Motor(Port.D, positive_direction=Direction.COUNTERCLOCKWISE)
+robot = DriveBase(left_motor, right_motor, wheel_diameter=55, axle_track=200)
+robot.settings(straight_speed=200, straight_acceleration=100, turn_rate=100)
 
-color_sensor = ColorSensor(Port.S4)
-ultrasonic_sensor = UltrasonicSensor(Port.S1)
+color_sensor_in1 = ColorSensor(Port.S4)
+obstacle_sensor = UltrasonicSensor(Port.S1)
 touch_sensor1 = TouchSensor(Port.S2)
+pickup_motor = Motor(Port.C)
 
-wheel_diameter = 55  # whell diam in mm
-axle_track = 200  # distance between wheels in mm
-robot = DriveBase(left_motor, right_motor, wheel_diameter, axle_track)
-robot.settings(-100, -100, 100, 100)
-ev3.speaker.beep()
+# Calibration values (adjust based on your testing)
+"""BLACK_THRESHOLD = 10
+WHITE_THRESHOLD = 95
+MIDPOINT = (BLACK_THRESHOLD + WHITE_THRESHOLD) // 2
+SHARP_TURN_THRESHOLD = 20  # Adjust for sharper turns
+
+# Driving speeds
+BASE_SPEED = 150  # Speed for driving forward
+TURN_GAIN = 1.5   # Gain factor for turning adjustment
+SHARP_TURN_GAIN = 2.5  # Stronger gain for sharp turns
+
+# Line-following logic
+def follow_line():
+    while True:
+        # Read sensor value
+        reflected_light = color_sensor_in1.reflection()
+        error = reflected_light - MIDPOINT
+
+        if reflected_light < BLACK_THRESHOLD + SHARP_TURN_THRESHOLD:
+            # Sharp turn: Reverse right motor for sharper steering
+            left_motor.run(BASE_SPEED)
+            right_motor.run(-BASE_SPEED)
+        else:
+            # Proportional control for smoother steering
+            turn_rate = error * TURN_GAIN
+            left_motor.run(BASE_SPEED - turn_rate)
+            right_motor.run(BASE_SPEED + turn_rate)
+
+try:
+    follow_line()
+except KeyboardInterrupt:
+    # Stop motors when interrupted
+    left_motor.stop(Stop.BRAKE)
+    right_motor.stop(Stop.BRAKE)"""
 
 def pickupThread():
     while True:
@@ -33,157 +67,95 @@ def pickupThread():
         pickup_motor.run(650)
         wait(100)
 
-robot.reset()
-
-white_intensity = 90
-gray_intensity = 55
-
-def followBlack(whiteAngle = -15):
-    intensity = color_sensor.reflection()
-    if intensity > white_intensity:
-        robot.drive(-100, whiteAngle)
-    else:
-        robot.drive(-100, (gray_intensity - intensity) * 0.4)
-
-def checkIfBlackCross(ultra_distance, driven_distance, color_intensity, max_ultra, max_driven, max_color):
-    ultra = 0
-    driven = 0 
-    color = 0
-    if ultra_distance > max_ultra:
-        ultra = 1
-    if driven_distance < max_driven:
-        driven = 1
-    if color_intensity < max_color:
-        color = 1
-    if ultra + driven + color >= 2:
-        return False
-    return True
-
+ev3.speaker.beep()
 while Button.CENTER not in ev3.buttons.pressed():
     wait(10)
     
 _thread.start_new_thread(pickupThread, ())
 
+# Calibration values (adjust based on testing)
+BLACK_THRESHOLD = 10
+WHITE_THRESHOLD = 95
+MIDPOINT = (BLACK_THRESHOLD + WHITE_THRESHOLD) // 2
+SHARP_TURN_THRESHOLD = 20  # Threshold for sharp turns
 
-# 1. otočka
+# PD controller constants (tune these values for your robot)
+Kp = 1.9  # Proportional gain
+Kd = 0.9  # Derivative gain
+
+# Driving speed
+BASE_SPEED = 200  # Base speed for motors
+SHARP_TURN_SPEED = BASE_SPEED  # Speed for sharp turns
+
+# Variables for PD control
+last_error = 0  # Stores the previous error for derivative calculation
+
+def stopAll():
+    left_motor.stop()
+    right_motor.stop()
+
+def drive_straight_with_ultrasonic():
+    desired_distance = 30  # Desired distance in millimeters (5 cm)
+    # Measure the distance using the ultrasonic sensor
+    current_distance = obstacle_sensor.distance()
+    print(current_distance)
+    if current_distance > desired_distance:
+        # If the distance is greater than the desired distance, move forward
+        robot.drive(100, 30)
+    elif current_distance < desired_distance:
+        robot.drive(100, -30)
+    else:
+        robot.drive(100, 0)
+
+# Line-following logic with PD control and sharp turns
+def follow_line():
+    global last_error
+    # Read the reflected light intensity
+    reflected_light = color_sensor_in1.reflection()
+
+    # Sharp turn detection
+    if reflected_light < BLACK_THRESHOLD + SHARP_TURN_THRESHOLD:
+        # Sharp turn: Reverse right motor for sharper steering
+        left_motor.run(SHARP_TURN_SPEED)
+        right_motor.run(-SHARP_TURN_SPEED)
+    else:
+        # Calculate the error (difference from midpoint)
+        error = reflected_light - MIDPOINT
+
+        # Calculate the derivative (rate of change of error)
+        derivative = error - last_error
+
+        # PD formula: Turn correction
+        turn_rate = (Kp * error) + (Kd * derivative)
+
+        # Update the last error
+        last_error = error
+
+        # Adjust motor speeds using the turn rate
+        left_motor.run(BASE_SPEED - turn_rate)
+        right_motor.run(BASE_SPEED + turn_rate)
+
+
 while not touch_sensor1.pressed():
-    robot.drive(-100, 0)
-    # wait(5)
-robot.stop()
-robot.drive(100, 0)
-wait(150)
-robot.turn(70)
-robot.reset()
-robot.drive(-100, 0)
-# vedeni po 1. čáře
-wait(2000)
-while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 860, -830, 15):
-    print("Driven: ", robot.distance())
-    print("Distance: ", ultrasonic_sensor.distance())
-    followBlack()
-    # wait(5)
-robot.stop()
-ev3.speaker.beep(500, 500)
-# otočka směrem k 1. spojce
-robot.turn(90)
-robot.reset()
-# vedení po 1. spojce
-while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 630, -250, 15):
-    print("Driven: ", robot.distance())
-    print("Distance: ", ultrasonic_sensor.distance())
-    followBlack(-30)
-    # wait(5)
-robot.stop()
-ev3.speaker.beep()
-# otočka směrem k 2. čáře
-robot.turn(80)
-robot.reset()
-# vedení po 2. čáře až do stěny
-while not touch_sensor1.pressed():
-    followBlack()
-    # wait(5)
-robot.stop()
+    follow_line()
+    wait(5)
+stopAll()
 # zacouvání od stěny a otočka směrem k 3. čáře
-robot.drive(100,0)
+ev3.speaker.beep(500, 500)
+robot.drive(-100,0)
 wait(50)
 robot.turn(-80)
-# približování k 3. čáře
-while ultrasonic_sensor.distance() < 600:
-    print("Distance: ", ultrasonic_sensor.distance())
-    robot.drive(-100, 0)
-    # wait(5)
+ev3.speaker.beep(500, 500)
 robot.stop()
-# otočka směrem na 3. čáru
-robot.turn(-85)
-robot.reset()
-# vedení po 3. čáře
-while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 860, -810, 15):
-    print("Driven: ", robot.distance())
-    print("Distance: ", ultrasonic_sensor.distance())
-    followBlack()
-    # wait(5)
+while color_sensor_in1.reflection() > 15:
+    drive_straight_with_ultrasonic()
+    wait(5)
+robot.drive(100, 0)
+wait(200)
 robot.stop()
-ev3.speaker.beep()
-# otočka směrem ke 2. spojce
-robot.turn(70)
-robot.reset()
-# vedení po 2. spojce
-while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 999999, -240, 15):
-    print("Driven: ", robot.distance())
-    print("Distance: ", ultrasonic_sensor.distance())
-    followBlack()
-    # wait(5)
+robot.turn(-80)
 robot.stop()
-ev3.speaker.beep()
-# otočka směrem ke 4. čáře
-robot.turn(90)
-robot.reset()
-# vedení po 4. čáře až do stěny
 while not touch_sensor1.pressed():
-    followBlack()
-    # wait(5)
-robot.stop()
-# manévr k 1. zásobníku
-robot.drive(100,0)
-wait(500)
-robot.turn(-120)
-robot.drive(100,-3)
-wait(7000)
-"""while not touch_sensor1.pressed():
-    followBlack()
-    # wait(5)
-robot.stop()
-robot.drive(100,0)
-wait(500)
-robot.turn(-70)
-while ultrasonic_sensor.distance() < 495:
-    robot.drive(-100, 0)
-    # wait(5)
-robot.stop()
-robot.turn(-70)
-while not touch_sensor1.pressed():
-    followBlack()
-    # wait(5)
-robot.stop()
-robot.drive(100, 0)
-wait(500)
-robot.turn(-40)
-wait(2000)
-robot.turn(40)
-wait(1000)
-robot.drive(100, -30)
-wait(2500)
-robot.drive(100, -8)
-wait(1000)
-while ultrasonic_sensor.distance() > 40:
-    robot.drive(100, 0)
-    wait(10)
-robot.drive(100, 0)
-wait(500)
-robot.drive(-100, 0)
-wait(300)
-robot.drive(100, 0)
-wait(300)
-robot.drive(-100, 0)
-wait(300)
-robot.stop()"""
+    follow_line()
+    wait(5)
+stopAll()
