@@ -88,7 +88,7 @@ ev3.speaker.beep(500, 500)
 robot.turn(90)
 robot.reset()
 # vedení po 1. spojce
-while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 610, -230, 15):
+while checkIfBlackCross(ultrasonic_sensor.distance(), robot.distance(), color_sensor.reflection(), 630, -250, 15):
     print("Driven: ", robot.distance())
     print("Distance: ", ultrasonic_sensor.distance())
     followBlack(-30)
@@ -108,7 +108,7 @@ robot.drive(100,0)
 wait(50)
 robot.turn(-80)
 # približování k 3. čáře
-while ultrasonic_sensor.distance() < 590:
+while ultrasonic_sensor.distance() < 600:
     print("Distance: ", ultrasonic_sensor.distance())
     robot.drive(-100, 0)
     # wait(5)
